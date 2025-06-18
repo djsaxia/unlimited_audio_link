@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音撃解放 -Unlimited AudioLink Show-</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            overflow: hidden;
+            cursor: none;
+        }
+        
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        .content {
+            position: relative;
+            z-index: 10;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            pointer-events: none;
+        }
+        
+        .title {
+            font-size: 4rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff, 0 0 60px #00ffff;
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: titleGlow 3s ease-in-out infinite alternate, fadeIn 2s ease-out forwards;
+            letter-spacing: 0.1em;
+        }
+        
+        .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: fadeIn 2s ease-out 1s forwards;
+            text-shadow: 0 0 10px #ff00ff;
+        }
+        
+        .event-link {
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            pointer-events: all;
+            opacity: 0;
+            animation: fadeIn 2s ease-out 2s forwards, pulse 2s ease-in-out infinite;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+        }
+        
+        .event-link:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.8);
+        }
+        
+        .lightning-cursor {
+            position: fixed;
+            pointer-events: none;
+            z-index: 5;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #00ffff 0%, transparent 70%);
+            border-radius: 50%;
+            box-shadow: 0 0 20px #00ffff;
+            animation: cursorPulse 1s ease-in-out infinite alternate;
+        }
+        
+        @keyframes titleGlow {
+            0% { text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff, 0 0 60px #00ffff; }
+            100% { text-shadow: 0 0 30px #ff00ff, 0 0 60px #ff00ff, 0 0 90px #ff00ff; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes cursorPulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0.5; }
+        }
+        
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+            }
+            .subtitle {
+                font-size: 1.2rem;
+            }
+            .event-link {
+                font-size: 1rem;
+                padding: 12px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="lightning-cursor" id="cursor"></div>
+    
+    <div class="content">
+        <h1 class="title">音撃解放</h1>
+        <h2 class="subtitle">-Unlimited AudioLink Show-</h2>
+        <a href="./unlimited_audio_link_show.html" class="event-link">イベント詳細を見る</a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // カスタムカーソル
+        const cursor = document.getElementById('cursor');
+        let mouseX = 0, mouseY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        function updateCursor() {
+            cursor.style.left = mouseX - 10 + 'px';
+            cursor.style.top = mouseY - 10 + 'px';
+            requestAnimationFrame(updateCursor);
+        }
+        updateCursor();
+
+        // Three.js セットアップ
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 1);
+
+        // 稲妻用のテクスチャ作成
+        function createLightningTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            
+            // グラデーション作成
+            const gradient = ctx.createLinearGradient(0, 0, 512, 0);
+            gradient.addColorStop(0, 'rgba(0, 255, 255, 0)');
+            gradient.addColorStop(0.1, 'rgba(0, 255, 255, 1)');
+            gradient.addColorStop(0.5, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.9, 'rgba(255, 0, 255, 1)');
+            gradient.addColorStop(1, 'rgba(255, 0, 255, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 512, 64);
+            
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // パーティクル用のテクスチャ作成
+        function createSparkTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.3, 'rgba(0, 255, 255, 0.8)');
+            gradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 64, 64);
+            
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const lightningTexture = createLightningTexture();
+        const sparkTexture = createSparkTexture();
+
+        // 稲妻システム
+        class Lightning {
+            constructor() {
+                this.bolts = [];
+                this.createBolt();
+            }
+            
+            createBolt() {
+                const points = [];
+                const segments = 20;
+                const startX = (Math.random() - 0.5) * 20;
+                const endX = (Math.random() - 0.5) * 20;
+                const startY = 10;
+                const endY = -10;
+                
+                for (let i = 0; i <= segments; i++) {
+                    const t = i / segments;
+                    const x = startX + (endX - startX) * t + (Math.random() - 0.5) * 2;
+                    const y = startY + (endY - startY) * t;
+                    const z = (Math.random() - 0.5) * 5;
+                    points.push(new THREE.Vector3(x, y, z));
+                }
+                
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const material = new THREE.LineBasicMaterial({
+                    color: 0x00ffff,
+                    transparent: true,
+                    opacity: 0.8,
+                    linewidth: 3
+                });
+                
+                const bolt = new THREE.Line(geometry, material);
+                bolt.life = 1.0;
+                bolt.maxLife = 0.1 + Math.random() * 0.2;
+                this.bolts.push(bolt);
+                scene.add(bolt);
+            }
+            
+            update() {
+                // 既存の稲妻を更新
+                for (let i = this.bolts.length - 1; i >= 0; i--) {
+                    const bolt = this.bolts[i];
+                    bolt.life -= 0.02;
+                    bolt.material.opacity = Math.max(0, bolt.life / bolt.maxLife);
+                    
+                    if (bolt.life <= 0) {
+                        scene.remove(bolt);
+                        this.bolts.splice(i, 1);
+                    }
+                }
+                
+                // 新しい稲妻を生成
+                if (Math.random() < 0.3) {
+                    this.createBolt();
+                }
+            }
+        }
+
+        // エネルギー球システム
+        class EnergyOrb {
+            constructor() {
+                const geometry = new THREE.SphereGeometry(0.5, 16, 16);
+                const material = new THREE.MeshBasicMaterial({
+                    color: 0xff00ff,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.mesh.position.set(
+                    (Math.random() - 0.5) * 30,
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 20
+                );
+                
+                this.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.1,
+                    (Math.random() - 0.5) * 0.1,
+                    (Math.random() - 0.5) * 0.1
+                );
+                
+                this.life = 1.0;
+                scene.add(this.mesh);
+            }
+            
+            update() {
+                this.mesh.position.add(this.velocity);
+                this.mesh.rotation.x += 0.02;
+                this.mesh.rotation.y += 0.03;
+                
+                this.life -= 0.005;
+                this.mesh.material.opacity = this.life * 0.6;
+                
+                // 境界でバウンス
+                if (Math.abs(this.mesh.position.x) > 15) this.velocity.x *= -1;
+                if (Math.abs(this.mesh.position.y) > 10) this.velocity.y *= -1;
+                if (Math.abs(this.mesh.position.z) > 10) this.velocity.z *= -1;
+                
+                return this.life > 0;
+            }
+        }
+
+        // パーティクルシステム
+        class ParticleSystem {
+            constructor() {
+                const particleCount = 200;
+                this.geometry = new THREE.BufferGeometry();
+                this.positions = new Float32Array(particleCount * 3);
+                this.velocities = [];
+                this.life = [];
+                
+                for (let i = 0; i < particleCount; i++) {
+                    this.positions[i * 3] = (Math.random() - 0.5) * 40;
+                    this.positions[i * 3 + 1] = (Math.random() - 0.5) * 30;
+                    this.positions[i * 3 + 2] = (Math.random() - 0.5) * 30;
+                    
+                    this.velocities.push(new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.02,
+                        (Math.random() - 0.5) * 0.02,
+                        (Math.random() - 0.5) * 0.02
+                    ));
+                    
+                    this.life.push(Math.random());
+                }
+                
+                this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
+                
+                const material = new THREE.PointsMaterial({
+                    map: sparkTexture,
+                    transparent: true,
+                    size: 0.5,
+                    blending: THREE.AdditiveBlending,
+                    vertexColors: false,
+                    color: 0x00ffff
+                });
+                
+                this.mesh = new THREE.Points(this.geometry, material);
+                scene.add(this.mesh);
+            }
+            
+            update() {
+                for (let i = 0; i < this.positions.length / 3; i++) {
+                    this.positions[i * 3] += this.velocities[i].x;
+                    this.positions[i * 3 + 1] += this.velocities[i].y;
+                    this.positions[i * 3 + 2] += this.velocities[i].z;
+                    
+                    this.life[i] -= 0.01;
+                    
+                    if (this.life[i] <= 0) {
+                        this.positions[i * 3] = (Math.random() - 0.5) * 40;
+                        this.positions[i * 3 + 1] = (Math.random() - 0.5) * 30;
+                        this.positions[i * 3 + 2] = (Math.random() - 0.5) * 30;
+                        this.life[i] = 1.0;
+                    }
+                }
+                
+                this.geometry.attributes.position.needsUpdate = true;
+            }
+        }
+
+        // システム初期化
+        const lightning = new Lightning();
+        const particleSystem = new ParticleSystem();
+        const energyOrbs = [];
+
+        // カメラ位置
+        camera.position.z = 15;
+
+        // リサイズ処理
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // アニメーションループ
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // 稲妻更新
+            lightning.update();
+            
+            // パーティクル更新
+            particleSystem.update();
+            
+            // エネルギー球更新
+            for (let i = energyOrbs.length - 1; i >= 0; i--) {
+                if (!energyOrbs[i].update()) {
+                    scene.remove(energyOrbs[i].mesh);
+                    energyOrbs.splice(i, 1);
+                }
+            }
+            
+            // 新しいエネルギー球を生成
+            if (Math.random() < 0.02 && energyOrbs.length < 10) {
+                energyOrbs.push(new EnergyOrb());
+            }
+            
+            // カメラの微妙な動き
+            camera.position.x = Math.sin(Date.now() * 0.001) * 0.5;
+            camera.position.y = Math.cos(Date.now() * 0.0015) * 0.3;
+            
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+    </script>
+</body>
+</html>
