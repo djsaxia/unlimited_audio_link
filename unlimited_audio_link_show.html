@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>音撃解放 -Unlimited AudioLink Show- 企画書</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/theme/black.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.css">
   <style>
     table {width: 100%%; border-collapse: collapse; font-size: 0.8em;}
     th, td {border: 1px solid #666; padding: 4px; text-align: center;}
@@ -89,9 +89,10 @@
 </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.min.js"></script>
-<script>
-  Reveal.initialize();
+<script type="module">
+  import Reveal from 'https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.esm.js';
+  const deck = new Reveal();
+  deck.initialize();
 </script>
 </body>
 </html>
